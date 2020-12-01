@@ -1,0 +1,2 @@
+import sys
+sys.path.append("/media/oreka/ganbara/IM3_Valencia/MaRCoS/RedPitaya/marcos_client")
