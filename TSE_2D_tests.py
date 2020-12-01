@@ -44,7 +44,7 @@ TR = 1e6  # us
 TE = 40e3  # us
 ETL = 2 # Echo train length
 fe_resolution = 64  # number of (I,Q) USEFUL samples to acquire during a shot
-pe_step_nr = 4    # number of phase encoding steps
+pe_step_nr = 8    # number of phase encoding steps
 # Delays385
 sample_nr_dig_filt = 0 # number of additional samples acquired per acquisition for filtering (digital)
 # sliceSelWaitEddy = 0 # us
@@ -170,14 +170,20 @@ if interleaved == 0:
 # Loop repeating TR and updating the gradients waveforms
 data = np.zeros([sample_nr_2_STOP_Seq, TR_nr], dtype=complex)
 
+# Generate experiment object
+exp = Experiment(samples=sample_nr_2_STOP_Seq,  # number of (I,Q) samples to acquire during a shot of the experiment
+                 lo_freq=freq_larmor,  # local oscillator frequency, MHz
+                 # grad_t=10,  # us, Gradient DAC sampling rate
+                 grad_channels=3,  # Define nr. of gradients being used
+                 tx_t=tx_dt,
+                 # RF TX sampling time in microseconds; will be rounded to a multiple of system clocks (122.88 MHz)
+                 rx_t=rx_dt,  # rx_dt_corr,  # RF RX sampling time in microseconds; as above
+                 instruction_file="TSE_2D_tests_echo_center_Rf.txt")  # TSE_2D_tests_echo_center_Rf.txt, TSE_2D_tests.txt
+
 for idxTR in range(TR_nr):
-    exp = Experiment(samples=sample_nr_2_STOP_Seq,  # number of (I,Q) samples to acquire during a shot of the experiment
-                     lo_freq=freq_larmor,           # local oscillator frequency, MHz
-                     grad_t=10,                     # us, Gradient DAC sampling rate
-                     grad_channels=3,               # Define nr. of gradients being used
-                     tx_t=tx_dt,           # RF TX sampling time in microseconds; will be rounded to a multiple of system clocks (122.88 MHz)
-                     rx_t= rx_dt, # rx_dt_corr,  # RF RX sampling time in microseconds; as above
-                     instruction_file="TSE_2D_tests_echo_center_Rf.txt") # TSE_2D_tests_echo_center_Rf.txt, TSE_2D_tests.txt
+    ## Initialise data buffers
+    exp.clear_tx()
+    exp.clear_grad()
     ###### Send waveforms to RP memory ###########
     tx_length = np.zeros(1).astype(int)
     # Load the RF waveforms
