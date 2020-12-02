@@ -11,6 +11,7 @@ import pdb
 import socket, time, warnings
 import numpy as np
 import matplotlib.pyplot as plt
+from mpldatacursor import datacursor
 # import scipy.fft as fft
 import scipy.signal as sig
 import pdb
@@ -57,7 +58,7 @@ T_tx_Rf = 100       # RF pulse length (us)
 T_G_ramp_dur = 250  # Gradient ramp time (us)
 # T_G_ramp_Rf_dur = 60  # Gradient ramp time (us)
 
-sample_nr_2_STOP_Seq = 256 + 10000 # Nr. of samples to acquire TO STOP the acquisition
+sample_nr_2_STOP_Seq = 256 + 1000 # Nr. of samples to acquire TO STOP the acquisition
 
 # Correct for DC offset and scaling
 scale_G_ss = 0.32
@@ -177,7 +178,7 @@ exp = Experiment(samples=sample_nr_2_STOP_Seq,  # number of (I,Q) samples to acq
                  tx_t=tx_dt,
                  # RF TX sampling time in microseconds; will be rounded to a multiple of system clocks (122.88 MHz)
                  rx_t=rx_dt,  # rx_dt_corr,  # RF RX sampling time in microseconds; as above
-                 instruction_file="TSE_2D_tests_echo_center_Rf.txt",  # TSE_2D_tests_echo_center_Rf.txt, TSE_2D_tests.txt
+                 instruction_file="TSE_2D_tests_RX_ON.txt",  # TSE_2D_tests_echo_center_Rf.txt, TSE_2D_tests.txt
                 assert_errors=False)
 for idxTR in range(TR_nr):
     ## Initialise data buffers
@@ -255,9 +256,10 @@ plt.figure(1)
 plt.subplot(2,1,1)
 # plt.plot(t_rx, np.real(data))
 # plt.plot(t_rx, np.abs(data))
-plt.plot(np.real(data))
+# plt.plot(np.real(data))
 plt.plot(np.abs(data))
-plt.legend(['real', 'abs'])
+datacursor(display='multiple', draggable=True)
+plt.legend(['1st acq', '2nd acq'])
 plt.xlabel('time (us)')
 plt.ylabel('signal received (V)')
 plt.title('Total sampled data = %i' % samples_data)
@@ -274,9 +276,10 @@ kspace[:, 1::2] = data[echo_shift_idx_2:echo_shift_idx_2 + sample_nr_echo, :]
 # np.savez(filemane, data=data, t_rx=t_rx, kspace=kspace)
 
 plt.subplot(2, 1, 2)
-plt.plot(np.real(kspace))
+# plt.plot(np.real(kspace))
 plt.plot(np.abs(kspace))
-plt.legend(['real', 'abs'])
+datacursor(display='multiple', draggable=True)
+plt.legend(['1st acq', '2nd acq'])
 plt.xlabel('Sample nr.')
 plt.ylabel('signal received (V)')
 plt.title('Echo time in acquisition from = %f' % t_rx[echo_shift_idx_1])
