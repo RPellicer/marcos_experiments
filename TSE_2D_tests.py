@@ -40,8 +40,6 @@ def sinc(x, tx_time, Nlobes, alpha):
 
 # Experiment parameters
 freq_larmor = 2.14769  # local oscillator frequency, MHz
-TR = 1e6  # us
-TE = 40e3  # us
 ETL = 2 # Echo train length
 fe_resolution = 64  # number of (I,Q) USEFUL samples to acquire during a shot
 pe_step_nr = 8    # number of phase encoding steps
@@ -51,7 +49,7 @@ sample_nr_dig_filt = 0 # number of additional samples acquired per acquisition f
 
 tx_dt = 1  # RF TX sampling dt in microseconds; is rounded to a multiple of clocks (122.88 MHz)
 BW = 20000          # Rf Rx Bandwidth
-rx_dt = (1 / BW) * 1e6
+rx_dt = (1 / BW) * 1e6 # in us, Sampling dwell time
 # rx_dt = 50  # RF RX sampling dt
 
 ##### Times have to match with "<instruction_file>.txt" ####
@@ -59,7 +57,7 @@ T_tx_Rf = 100       # RF pulse length (us)
 T_G_ramp_dur = 250  # Gradient ramp time (us)
 # T_G_ramp_Rf_dur = 60  # Gradient ramp time (us)
 
-sample_nr_2_STOP_Seq = 256 + 1000 # Nr. of samples to acquire TO STOP the acquisition
+sample_nr_2_STOP_Seq = 256 + 10000 # Nr. of samples to acquire TO STOP the acquisition
 
 # Correct for DC offset and scaling
 scale_G_ss = 0.32
@@ -150,7 +148,6 @@ grad_fe = np.hstack([grad_fe, np.zeros(np.round(380 - np.size(grad_fe)).astype('
 #                 tx_t=tx_dt,
 #                 instruction_file="ocra_lib/se_default_vn.txt")
 #exp.initialize_DAC()
-#time.sleep(1)
 
 # Arrange kSpace filling
 interleaved = 0
@@ -171,15 +168,17 @@ if interleaved == 0:
 data = np.zeros([sample_nr_2_STOP_Seq, TR_nr], dtype=complex)
 
 # Generate experiment object
+
 exp = Experiment(samples=sample_nr_2_STOP_Seq,  # number of (I,Q) samples to acquire during a shot of the experiment
                  lo_freq=freq_larmor,  # local oscillator frequency, MHz
-                 # grad_t=10,  # us, Gradient DAC sampling rate
+                 # grad_t=5.6,  # us, Gradient DAC sampling rate
+                 grad_t = 3.333,
                  grad_channels=3,  # Define nr. of gradients being used
                  tx_t=tx_dt,
                  # RF TX sampling time in microseconds; will be rounded to a multiple of system clocks (122.88 MHz)
                  rx_t=rx_dt,  # rx_dt_corr,  # RF RX sampling time in microseconds; as above
-                 instruction_file="TSE_2D_tests_echo_center_Rf.txt")  # TSE_2D_tests_echo_center_Rf.txt, TSE_2D_tests.txt
-
+                 instruction_file="TSE_2D_tests_echo_center_Rf.txt",  # TSE_2D_tests_echo_center_Rf.txt, TSE_2D_tests.txt
+                assert_errors=False)
 for idxTR in range(TR_nr):
     ## Initialise data buffers
     exp.clear_tx()
@@ -246,6 +245,7 @@ for idxTR in range(TR_nr):
 
     # Run command to MaRCoS
     data[:, idxTR] = exp.run()
+    time.sleep(1) # For testing purposes - Slow down time between TR
 
 # time vector for representing the received data
 samples_data = len(data)

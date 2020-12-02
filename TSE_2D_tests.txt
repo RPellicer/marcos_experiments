@@ -69,8 +69,11 @@ PR 8, 3800          // grad&read    // A[2B]
 //Block 6: pe- (echo 2)
 GRADOFFSET 1530						        // A[28] GRADOFFSET Frequency encoding
 PR 8, 1880          // grad&read            // A[2B]
+//Safety to leave gradients to zero
+GRADOFFSET 0						        // A[28] GRADOFFSET Frequency encoding
+PR 7, 20          // grad&read            // A[2B]
 PR 3, 0             // wait                 // A[22] *** Adjust here to change TR.
-PR 4, 50000         // wait & read          // A[31] STOP: fill data buffer to trigger stop
+PR 4, 500000        // wait & read          // A[31] STOP: fill data buffer to trigger stop
 DEC 2 				// reduce counter 2		// A[32] DEC R[2]
 JNZ 2, 0x1D 		// If cntr 2 not 0	jump// A[33] JNZ R[2] => `PC=0x1D
 HALT 								        // A[34] HALT
