@@ -11,7 +11,7 @@ import pdb
 import socket, time, warnings
 import numpy as np
 import matplotlib.pyplot as plt
-from mpldatacursor import datacursor
+# from mpldatacursor import datacursor
 # import scipy.fft as fft
 import scipy.signal as sig
 import pdb
@@ -43,7 +43,8 @@ def sinc(x, tx_time, Nlobes, alpha):
 freq_larmor = 2.14769  # local oscillator frequency, MHz
 ETL = 2 # Echo train length
 fe_resolution = 64  # number of (I,Q) USEFUL samples to acquire during a shot
-pe_step_nr = 8    # number of phase encoding steps
+pe_step_nr = 64    # number of phase encoding steps
+kSpaceOrderingMode = 1 # Way kSpace is traversed durign phase encoding steps: 0 = linear, 1 = blocks center first
 # Delays385
 sample_nr_dig_filt = 0 # number of additional samples acquired per acquisition for filtering (digital)
 # sliceSelWaitEddy = 0 # us
@@ -73,8 +74,8 @@ Rf_ampl = 0.07125  # for Tom
 sample_nr_echo = fe_resolution + sample_nr_dig_filt # number of (I,Q) TOTAL samples to acquire during a shot
 
 # Centering the echo
-echo_delay1 = 4550  # us; correction for receiver delay
-echo_delay2 = 4550  # us; correction for receiver delay
+echo_delay1 = 10400  # us; correction for receiver delay
+echo_delay2 = 18150  # us; correction for receiver delay
 
 ##### RF pulses #####
 rx_dt_corr = rx_dt * 0.5  # correction factor to have correct Rx sampling time till the bug is fixed
@@ -143,33 +144,24 @@ grad_fe = np.hstack([np.linspace(0, 1, grad_ramp_samp_nr),  # Ramp up
 sample_nr_center_G_fe = (((1 / (BW / 140)) / 2) * 1e6 + T_G_ramp_dur)/10 # Total phase encoding gradient ON time length (us)
 grad_fe = np.hstack([grad_fe, np.zeros(np.round(380 - np.size(grad_fe)).astype('int'))])
 
-## Initialisation of the DAC
-#exp = Experiment(samples=4,  # number of (I,Q) samples to acquire during a shot of the experiment
-#                 lo_freq=freq_larmor,  # local oscillator frequency, MHz
-#                 tx_t=tx_dt,
-#                 instruction_file="ocra_lib/se_default_vn.txt")
-#exp.initialize_DAC()
-
 # Arrange kSpace filling
-interleaved = 0
 scale_G_pe_range = np.linspace(-1, 1, pe_step_nr)
 # to acquire non-consecutive kSpace lines
-if interleaved == 0:
-    TR_nr = np.ceil(pe_step_nr / ETL).astype(int)
-    kIdxTmp = np.zeros([TR_nr,ETL]).astype(int)
-    kIdxTmp2 = np.zeros([TR_nr,ETL]).astype(int)
-    for idx3 in range(np.ceil(TR_nr/2).astype(int)):
-        kIdxTmp[idx3,:] = idx3+(np.linspace(0, ETL-1, ETL).astype(int))*np.ceil(TR_nr/2).astype(int)
-    # Reorder here the echoes
-    kIdxTmp[np.ceil(TR_nr / 2).astype(int):, :] = (kIdxTmp[:(np.ceil(TR_nr / 2).astype(int)), :] + 1) * -1
-    kIdxTmp2[0::2, :] = kIdxTmp[:np.ceil(TR_nr / 2).astype(int), :]
-    kIdxTmp2[1::2, :] = kIdxTmp[np.ceil(TR_nr / 2).astype(int):, :]
+TR_nr = np.floor(pe_step_nr / ETL).astype(int)
+kIdxTmp2 = np.arange(pe_step_nr)
+if kSpaceOrderingMode == 0:
+    kIdxTmp2[0:np.floor(pe_step_nr / ETL).astype(int)] = np.flip(kIdxTmp2[0:np.floor(pe_step_nr / ETL).astype(int)])
+    kIdxTmp2 = np.reshape(kIdxTmp2,(-1,ETL))
+elif kSpaceOrderingMode == 1:
+    kIdxTmp2 = kIdxTmp2.reshape(np.floor(TR_nr/2).astype(int),-1, order='F')
+    kIdxTmp2[:,:ETL]= np.flip(kIdxTmp2[:,:ETL],0)
+    kIdxTmp2[:,:ETL]= np.flip(kIdxTmp2[:,:ETL],1)
+    kIdxTmp2 = np.vstack([kIdxTmp2[:,:ETL], kIdxTmp2[:,ETL:]])
 
 # Loop repeating TR and updating the gradients waveforms
 data = np.zeros([sample_nr_2_STOP_Seq, TR_nr], dtype=complex)
 
 # Generate experiment object
-
 exp = Experiment(samples=sample_nr_2_STOP_Seq,  # number of (I,Q) samples to acquire during a shot of the experiment
                  lo_freq=freq_larmor,  # local oscillator frequency, MHz
                  # grad_t=5.6,  # us, Gradient DAC sampling rate
@@ -180,6 +172,7 @@ exp = Experiment(samples=sample_nr_2_STOP_Seq,  # number of (I,Q) samples to acq
                  rx_t=rx_dt,  # rx_dt_corr,  # RF RX sampling time in microseconds; as above
                  instruction_file="TSE_2D_tests_RX_ON.txt",  # TSE_2D_tests_echo_center_Rf.txt, TSE_2D_tests.txt
                 assert_errors=False)
+
 for idxTR in range(TR_nr):
     ## Initialise data buffers
     exp.clear_tx()
@@ -187,6 +180,7 @@ for idxTR in range(TR_nr):
     ###### Send waveforms to RP memory ###########
     tx_length = np.zeros(1).astype(int)
     # Load the RF waveforms
+    # tx_idx = exp.add_tx(tx90.astype(complex))               # add 90x+ Rf data to the ocra TX memory
     tx_idx = exp.add_tx(tx90.astype(complex))               # add 90x+ Rf data to the ocra TX memory
     tx_length = np.hstack([tx_length, tx_length[-1] + tx90.size])
     tx_idx = exp.add_tx(tx180.astype(complex))              # add 180x+ Rf data to the ocra TX memory
@@ -253,12 +247,12 @@ samples_data = len(data)
 t_rx = np.linspace(0, rx_dt * samples_data, samples_data)  # us
 
 plt.figure(1)
-plt.subplot(2,1,1)
+plt.subplot(3,1,1)
 # plt.plot(t_rx, np.real(data))
 # plt.plot(t_rx, np.abs(data))
 # plt.plot(np.real(data))
 plt.plot(np.abs(data))
-datacursor(display='multiple', draggable=True)
+# datacursor(display='multiple', draggable=True)
 plt.legend(['1st acq', '2nd acq'])
 plt.xlabel('time (us)')
 plt.ylabel('signal received (V)')
@@ -267,19 +261,26 @@ plt.grid()
 
 echo_shift_idx_1 = np.floor(echo_delay1 / rx_dt).astype('int')
 echo_shift_idx_2 = np.floor(echo_delay2 / rx_dt).astype('int')
-kspace = np.zeros([sample_nr_echo, pe_step_nr]).astype(complex)
-kspace[:, 0::2] = data[echo_shift_idx_1:echo_shift_idx_1 + sample_nr_echo, :]
-kspace[:, 1::2] = data[echo_shift_idx_2:echo_shift_idx_2 + sample_nr_echo, :]
+kspace = np.zeros([sample_nr_echo, TR_nr * ETL]).astype(complex)
+kspaceTmp =  np.zeros([sample_nr_echo, pe_step_nr]).astype(complex)
+
+kspaceTmp[:, 0::2] = data[echo_shift_idx_1:echo_shift_idx_1 + sample_nr_echo, :]
+kspaceTmp[:, 1::2] = data[echo_shift_idx_2:echo_shift_idx_2 + sample_nr_echo, :]
+# kspace = np.squeeze(kspaceTmp[:,kIdxTmp2.reshape(-1, 1)])
+kspace[:,np.squeeze(kIdxTmp2.reshape(-1, 1))] = kspaceTmp
 
 # timestr = time.strftime("%Y%m%d-%H%M%S")
 # filemane = timestr + str("outfile")
 # np.savez(filemane, data=data, t_rx=t_rx, kspace=kspace)
 
-plt.subplot(2, 1, 2)
-# plt.plot(np.real(kspace))
+plt.subplot(3, 1, 2)
 plt.plot(np.abs(kspace))
-datacursor(display='multiple', draggable=True)
-plt.legend(['1st acq', '2nd acq'])
+plt.legend(['1st acq', '2nd acq','3','4','5','6','7','8'])
+plt.subplot(3, 1, 3)
+plt.plot(np.arange(echo_shift_idx_1,echo_shift_idx_1 + sample_nr_echo,1), np.abs(kspaceTmp[:, 0::2]))
+plt.plot(np.arange(echo_shift_idx_2,echo_shift_idx_2 + sample_nr_echo,1), np.abs(kspaceTmp[:, 1::2]))
+# datacursor(display='multiple', draggable=True)
+plt.legend(['1st acq', '2nd acq','3','4','5','6','7','8'])
 plt.xlabel('Sample nr.')
 plt.ylabel('signal received (V)')
 plt.title('Echo time in acquisition from = %f' % t_rx[echo_shift_idx_1])
