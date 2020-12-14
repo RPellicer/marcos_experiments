@@ -29,60 +29,63 @@ NOP                                         // A[1B] UNUSED
 NOP                                         // A[1C] UNUSED
 // Block 1: Rf90x+ + ss
 TXOFFSET 0 							        // A[1D] TXOFFSET 0: RF 90x+				"JNZ here"
-GRADOFFSET 0 						        // A[1E] GRADOFFSET Phase encoding in parallel to Frequency encoding rewind
+GRADOFFSET 5 						        // A[1E] GRADOFFSET Phase encoding in parallel to Frequency encoding rewind
 //PR 7, 10          // grad-Update offset   // A[1F]
 PR 11, 20           // Unblank Tx           // A[20]
 PR 6, 100	        // 5- RF 90        	    // A[21]
-PR 4, 680           // 3- wait                  // A[22]
+PR 4, 670           // 3- wait                  // A[22]
 // Block 2: -fe/2 prephase
-PR 8, 2000          // 8- grad                 // A[23] Frequency encoding prephaser
-PR 4, 1050	        // 4- wait				    // A[24]
-PR 4, 0             // 4- wait                 // A[22] *** Adjust here and below to change TE. The TE will be 5 ms plus this value
+PR 8, 2200          // 8- grad                 // A[23] Frequency encoding prephaser
+PR 4, 1010	        // 4- wait				    // A[24]
+//PR 4, 0             // 4- wait                 // A[22] *** Adjust here and below to change TE. The TE will be 5 ms plus this value
 // Block 3: Rf180y+ + ss (echo 1)
 TXOFFSET 2000 						        // A[25] TXOFFSET 0: RF 180y+
 PR 11, 20           // Unblank Tx           // A[26]
 PR 6, 100	        // 6- RF 180			    // A[27]
-PR 4, 0             // 4- wait                 // A[22] *** Adjust here to change TE.
+//PR 4, 0             // 4- wait                 // A[22] *** Adjust here to change TE.
 // Block 4: pe+ (echo 1)
-GRADOFFSET 600 //200						        // A[28] GRADOFFSET Phase encoding +
-PR 8, 1900          // 7- grad                 //
-PR 4, 50            // 8- wait
+GRADOFFSET 665 //200						        // A[28] GRADOFFSET Phase encoding +
+PR 8, 1890          // 7- grad                 //
+PR 4, 110            // 8- wait
 //Block 5: fe (echo 1)
-GRADOFFSET 1170 //390						        // A[28] GRADOFFSET Frequency encoding
+GRADOFFSET 1235 //390						        // A[28] GRADOFFSET Frequency encoding
 TXOFFSET 0		// @@@ TEST			        // A[2C] TXOFFSET 0: RF 90x+
-//PR 8, 3800        // ORIGINAL grad&read    // A[2B]
-PR 8, 1800        // @@@ TEST grad&read      // A[2B]
+//PR 8, 4000        // ORIGINAL grad&read    // A[2B]
+PR 8, 1890        // @@@ TEST grad&read      // A[2B]
 PR 10, 100        // @@@ TEST grad&read&pulse // A[2D] NOT to use on actual MRI!! Be careful, this sends a Tx while Rx is ON Echo ref
 PR 8, 1900        // @@@ TEST grad&read       // A[2E]
+PR 4, 110             // 3- wait 
 //Block 6: pe- (echo 1)
-GRADOFFSET 2310  //770						        // A[28] GRADOFFSET Phase encoding-
-PR 8, 1880          // grad&read            // A[2B]
-PR 4, 0             // 3- wait                 // A[22] *** Adjust here to change TE.
+GRADOFFSET 2435  //770						// A[28] GRADOFFSET Phase encoding-
+PR 8, 1870          // grad&read            // A[2B]
+//PR 4, 0             // 3- wait                 // A[22] *** Adjust here to change TE.
 // Block 3: Rf180y- + ss (echo 2)
 TXOFFSET 3000 						        // A[25] TXOFFSET 0: RF 180y-
 PR 11, 20           // Unblank Tx           // A[26]
 PR 6, 100	        // 5- RF 180			    // A[27]
-PR 4, 0             // 4- wait                 // A[22] *** Adjust here to change TE.
+//PR 4, 0             // 4- wait                 // A[22] *** Adjust here to change TE.
 // Block 4: pe+ (echo 2)
-GRADOFFSET 2880  //960						        // A[28] GRADOFFSET Phase encoding +
-PR 8, 1900          // 7- grad                 //
-PR 4, 50            // 3- wait                 //
+GRADOFFSET 3005  //960						        // A[28] GRADOFFSET Phase encoding +
+PR 8, 1890          // 7- grad                 //
+PR 4, 110            // 3- wait                 //
 //Block 5: fe (echo 2)
-GRADOFFSET 3450  //1150						        // A[28] GRADOFFSET Frequency encoding
-TXOFFSET 0		// @@@ TEST			        // A[2C] TXOFFSET 0: RF 90x+
+GRADOFFSET 3575  //1150						        // A[28] GRADOFFSET Frequency encoding
+TXOFFSET 0		// @@@ TEST			        // A[2C] TXOFFSET 0: RF 180x+
 //PR 8, 3800        // ORIGINAL grad&read    // A[2B]
-PR 8, 1800        // @@@ TEST grad&read      // A[2B]
+PR 8, 1890        // @@@ TEST grad&read      // A[2B]
 PR 10, 100        // @@@ TEST grad&read&pulse // A[2D] NOT to use on actual MRI!! Be careful, this sends a Tx while Rx is ON Echo ref
 PR 8, 1900        // @@@ TEST grad&read       // A[2E]
+PR 4, 110             // 3- wait 
 //Block 6: pe- (echo 2)
-GRADOFFSET 4590						        // A[28] GRADOFFSET Frequency encoding
-PR 4, 0             // 3- wait
-PR 8, 1880          // grad&read            // A[2B]
+GRADOFFSET 4775						        // A[28] GRADOFFSET Frequency encoding
+PR 8, 1870          // grad&read            // A[2B]
+//PR 4, 0             // 3- wait                 // A[22] *** Adjust here to change TE.
+// Block 3: Rf180y- + ss (echo 2)
 //Safety to leave gradients to zero
 //PR 3, 0             // wait
 //GRADOFFSET 0						        // A[28] GRADOFFSET Frequency encoding
 //PR 7, 18         // grad            // A[2B]
-PR 4, 0             // 3- wait                 // A[22] *** Adjust here to change TR.
+//PR 4, 0             // 3- wait                 // A[22] *** Adjust here to change TR.
 PR 4, 50000000         // wait & read          // A[31] STOP: fill data buffer to trigger stop
 DEC 2 				// reduce counter 2		// A[32] DEC R[2]
 JNZ 2, 0x1D 		// If cntr 2 not 0	jump// A[33] JNZ R[2] => `PC=0x1D
