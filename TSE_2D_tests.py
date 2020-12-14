@@ -43,8 +43,8 @@ def sinc(x, tx_time, Nlobes, alpha):
 freq_larmor = 2.14769  # local oscillator frequency, MHz
 ETL = 2 # Echo train length
 fe_resolution = 64  # number of (I,Q) USEFUL samples to acquire during a shot
-pe_step_nr = 8    # number of phase encoding steps
-pess_step_nr = 4    # number of phase encoding steps in the slice direction
+pe_step_nr = 4    # number of phase encoding steps
+pess_step_nr = 2    # number of phase encoding steps in the slice direction
 kSpaceOrderingMode = 1 # Way kSpace is traversed durign phase encoding steps: 0 = linear, 1 = blocks center first
 # Delays385
 sample_nr_dig_filt = 3 # number of additional samples acquired per acquisition for filtering (digital)
@@ -252,8 +252,8 @@ t_rx = np.linspace(0, rx_dt * samples_data, samples_data)  # us
 echo_shift_idx_1 = 6491  # RxBuffIniTrash + np.floor(echo_delay1 / rx_dt).astype('int')
 echo_shift_idx_2 = 14519 # RxBuffIniTrash + np.floor(echo_delay2 / rx_dt).astype('int')
 
-kspace = np.zeros([sample_nr_echo, TR_nr, ETL]).astype(complex)
-kspaceTmp = np.zeros([sample_nr_echo, pe_step_nr]).astype(complex)
+kspaceOver = np.zeros([sample_nr_echo, TR_nr * ETL]).astype(complex)
+kspaceTmp = np.zeros([sample_nr_echo, TR_nr * ETL]).astype(complex)
 
 kspaceTmp[:, 0::2] = data[echo_shift_idx_1:echo_shift_idx_1 + sample_nr_echo, :]
 kspaceTmp[:, 1::2] = data[echo_shift_idx_2:echo_shift_idx_2 + sample_nr_echo, :]
@@ -266,7 +266,8 @@ tresholdWindowIdx = np.array([0, 300])
 trigTres = np.argmax(abs(data[tresholdWindowIdx[0]:tresholdWindowIdx[1],:]) > 0.1, axis = 0)
 trigTres = (trigTres - np.ceil(np.mean(trigTres))).astype(int)
 trigTres = trigTres[..., None]
-kspaceTmpJitt = np.zeros([sample_nr_echo, pe_step_nr]).astype(complex)
+kspaceOverJitt = np.zeros([sample_nr_echo, TR_nr * ETL]).astype(complex)
+kspaceTmpJitt = np.zeros([sample_nr_echo, TR_nr * ETL]).astype(complex)
 tmp1 = np.arange(echo_shift_idx_1, echo_shift_idx_1 + sample_nr_echo)
 tmp2 = np.arange(echo_shift_idx_2, echo_shift_idx_2 + sample_nr_echo)
 echoWind1 = tmp1 + trigTres
