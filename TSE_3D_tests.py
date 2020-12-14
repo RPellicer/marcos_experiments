@@ -176,11 +176,13 @@ exp = Experiment(samples=sample_nr_2_STOP_Seq,  # number of (I,Q) samples to acq
                  tx_t=tx_dt,
                  # RF TX sampling time in microseconds; will be rounded to a multiple of system clocks (122.88 MHz)
                  rx_t=rx_dt,  # rx_dt_corr,  # RF RX sampling time in microseconds; as above
-                 instruction_file="TSE_2D_tests_RX_ON.txt",
+                 # instruction_file="TSE_2D_tests_RX_ON.txt",
+                 instruction_file="TSE_2D_tests_echo_center_Rf_RX_ON.txt",
                  # TSE_2D_tests.txt   "TSE_2D_tests_echo_center_Rf_RX_ON.txt", #
                  assert_errors=False)
 
 for idx3Dpe in range(pe3D_step_nr):
+    scale_G_pe3D_sweep = scale_G_pe3D_range[idx3Dpe]
     for idxTR in range(TR_nr):
         ## Initialise data buffers
         exp.clear_tx()
@@ -227,9 +229,10 @@ for idx3Dpe in range(pe3D_step_nr):
             # ----echo 1--------------------
             # Block 3: Rf180 + ss
             # Block 4: pe+
+            grad_ss_4_corr = grad_pe * scale_G_ss * scale_G_pe3D_sweep + offset_G_ss
+            # grad_ss_4_corr = np.zeros(np.size(grad_pe_4_corr)) + offset_G_ss
             grad_pe_4_corr = grad_pe * scale_G_pe * scale_G_pe_sweep + offset_G_pe
             grad_fe_4_corr = np.zeros(np.size(grad_pe_4_corr)) + offset_G_fe
-            grad_ss_4_corr = np.zeros(np.size(grad_pe_4_corr)) + offset_G_ss
             grad_idx = exp.add_grad([grad_ss_4_corr, grad_pe_4_corr, grad_fe_4_corr])
             G_length = np.hstack([G_length, G_length[-1] + grad_fe_4_corr.size])
             G_length_Non_Zero = np.hstack([G_length_Non_Zero, grad_pe_samp_nr])
@@ -243,53 +246,58 @@ for idx3Dpe in range(pe3D_step_nr):
             G_length_Non_Zero = np.hstack([G_length_Non_Zero, grad_fe_samp_nr])
 
             # Block 6: pe-
+            grad_ss_6_corr = grad_pe * (-scale_G_ss) * scale_G_pe3D_sweep + offset_G_ss
             grad_pe_6_corr = grad_pe * (-scale_G_pe) * scale_G_pe_sweep + offset_G_pe
             grad_fe_6_corr = np.zeros(np.size(grad_pe_6_corr)) + offset_G_fe
-            grad_ss_6_corr = np.zeros(np.size(grad_pe_6_corr)) + offset_G_ss
             grad_idx = exp.add_grad([grad_ss_6_corr, grad_pe_6_corr, grad_fe_6_corr])
             G_length = np.hstack([G_length, G_length[-1] + grad_fe_6_corr.size])
             G_length_Non_Zero = np.hstack([G_length_Non_Zero, grad_pe_samp_nr])
 
         # Run command to MaRCoS
         data[:, idxTR, idx3Dpe] = exp.run()
-        time.sleep(0.1)  # For testing purposes - Slow down time between TR
+        time.sleep(1)  # For testing purposes - Slow down time between TR
 
 # time vector for representing the received data
 samples_data = len(data)
 t_rx = np.linspace(0, rx_dt * samples_data, samples_data)  # us
 
 echo_shift_idx_1 = 6491  # RxBuffIniTrash + np.floor(echo_delay1 / rx_dt).astype('int')
-echo_shift_idx_2 = 14519  # RxBuffIniTrash + np.floor(echo_delay2 / rx_dt).astype('int')
+echo_shift_idx_2 = 14499  # RxBuffIniTrash + np.floor(echo_delay2 / rx_dt).astype('int')
 
-kspace = np.zeros([sample_nr_echo, TR_nr, ETL, idx3Dpe]).astype(complex)
-kspaceTmp = np.zeros([sample_nr_echo, pe_step_nr, idx3Dpe]).astype(complex)
+kspaceOver = np.zeros([sample_nr_echo, TR_nr * ETL, pe3D_step_nr]).astype(complex)
+kspaceTmp = np.zeros([sample_nr_echo, TR_nr * ETL, pe3D_step_nr]).astype(complex)
 
-kspaceTmp[:, 1::2, :] = data[echo_shift_idx_2:echo_shift_idx_2 + sample_nr_echo, :, :]
-kspaceOver = np.squeeze(kspaceTmp[:, kIdxTmp2.reshape(-1, 1)])
+for idx3Dpe in range(pe3D_step_nr):
+    kspaceTmp[:, 0::2, idx3Dpe] = data[echo_shift_idx_1:echo_shift_idx_1 + sample_nr_echo, :, idx3Dpe]
+    kspaceTmp[:, 1::2, idx3Dpe] = data[echo_shift_idx_2:echo_shift_idx_2 + sample_nr_echo, :, idx3Dpe]
+    kspaceOver[:, np.squeeze(kIdxTmp2.reshape(-1, 1)),idx3Dpe] = kspaceTmp[:,:,idx3Dpe]
+    # kspaceOver = np.squeeze(kspaceTmp[:,kIdxTmp2.reshape(-1, 1)])
 kspace = sig.decimate(kspaceOver, overSamplRatio, axis=0)
 
-### Correct for shift on echoes  ###
-tresholdWindowIdx = np.array([0, 300])
-trigTres = np.argmax(abs(data[tresholdWindowIdx[0]:tresholdWindowIdx[1], :]) > 0.1, axis=0)
-trigTres = (trigTres - np.ceil(np.mean(trigTres))).astype(int)
-trigTres = trigTres[..., None]
-kspaceTmpJitt = np.zeros([sample_nr_echo, pe_step_nr]).astype(complex)
-tmp1 = np.arange(echo_shift_idx_1, echo_shift_idx_1 + sample_nr_echo)
-tmp2 = np.arange(echo_shift_idx_2, echo_shift_idx_2 + sample_nr_echo)
-echoWind1 = tmp1 + trigTres
-echoWind1 = echoWind1.T
-echoWind2 = tmp2 + trigTres
-echoWind2 = echoWind2.T
+# ### Correct for shift on echoes  ###
+# tresholdWindowIdx = np.array([0, 300])
+# trigTres = np.argmax(abs(data[tresholdWindowIdx[0]:tresholdWindowIdx[1], :,:]), 0.1, axis=0)
+# trigTres = (trigTres - np.ceil(np.mean(trigTres))).astype(int)
+# trigTres = trigTres[..., None]
+# kspaceTmpJitt = np.zeros([sample_nr_echo, TR_nr * ETL, idx3Dpe]).astype(complex)
+# tmp1 = np.arange(echo_shift_idx_1, echo_shift_idx_1 + sample_nr_echo)
+# tmp2 = np.arange(echo_shift_idx_2, echo_shift_idx_2 + sample_nr_echo)
+# echoWind1 = tmp1 + trigTres
+# echoWind1 = echoWind1.T
+# echoWind2 = tmp2 + trigTres
+# echoWind2 = echoWind2.T
+#
+# for idxTR in range(TR_nr):
+#     kspaceTmpJitt[:, idxTR * ETL] = data[echoWind1[:, idxTR], idxTR]
+#     kspaceTmpJitt[:, idxTR * ETL + 1] = data[echoWind2[:, idxTR], idxTR]
+#
+# kspaceOverJitt = np.squeeze(kspaceTmpJitt[:, kIdxTmp2.reshape(-1, 1)])
+# kspaceJitt = sig.decimate(kspaceOverJitt, overSamplRatio, axis=0)
 
-for idxTR in range(TR_nr):
-    kspaceTmpJitt[:, idxTR * ETL] = data[echoWind1[:, idxTR], idxTR]
-    kspaceTmpJitt[:, idxTR * ETL + 1] = data[echoWind2[:, idxTR], idxTR]
-
-kspaceOverJitt = np.squeeze(kspaceTmpJitt[:, kIdxTmp2.reshape(-1, 1)])
-kspaceJitt = sig.decimate(kspaceOverJitt, overSamplRatio, axis=0)
+# Save the data to post process if necesary
 timestr = time.strftime("%Y%m%d-%H%M%S")
 filemane = timestr + str("outfile")
-np.savez(filemane, data=data, kspace=kspace, kspaceOverJitt=kspaceOverJitt)
+np.savez(filemane, data=data, kspace=kspace, kspaceOverJitt=kspaceOver)
 # np.save("testData.npy", data)
 
 plt.figure(1)
@@ -297,7 +305,8 @@ plt.subplot(3, 1, 1)
 # plt.plot(t_rx, np.real(data))
 # plt.plot(t_rx, np.abs(data))
 # plt.plot(np.real(data))
-plt.plot(np.abs(data))
+for idx3Dpe in range(pe3D_step_nr):
+    plt.plot(np.abs(data[:,:,idx3Dpe]))
 # datacursor(display='multiple', draggable=True)
 plt.legend(['1st acq', '2nd acq'])
 plt.xlabel('time (us)')
@@ -306,11 +315,13 @@ plt.title('Total sampled data = %i' % samples_data)
 plt.grid()
 
 plt.subplot(3, 1, 2)
-plt.plot(np.abs(kspace))
+for idx3Dpe in range(pe3D_step_nr):
+    plt.plot(np.abs(kspace[:, :, idx3Dpe]))
 plt.legend(['1st acq', '2nd acq', '3', '4', '5', '6', '7', '8'])
 plt.subplot(3, 1, 3)
-plt.plot(np.arange(echo_shift_idx_1, echo_shift_idx_1 + sample_nr_echo, 1), np.abs(kspaceTmp[:, 0::2]))
-plt.plot(np.arange(echo_shift_idx_2, echo_shift_idx_2 + sample_nr_echo, 1), np.abs(kspaceTmp[:, 1::2]))
+for idx3Dpe in range(pe3D_step_nr):
+    plt.plot(np.arange(echo_shift_idx_1, echo_shift_idx_1 + sample_nr_echo, 1), np.abs(kspaceTmp[:, 0::2, idx3Dpe]))
+    plt.plot(np.arange(echo_shift_idx_2, echo_shift_idx_2 + sample_nr_echo, 1), np.abs(kspaceTmp[:, 1::2, idx3Dpe]))
 # datacursor(display='multiple', draggable=True)
 plt.legend(['1st acq', '2nd acq', '3', '4', '5', '6', '7', '8'])
 plt.xlabel('Sample nr.')
@@ -319,18 +330,18 @@ plt.title('Echo time in acquisition from = %f' % t_rx[echo_shift_idx_1])
 plt.grid()
 
 plt.figure(2)
-plt.subplot(1, 3, 1)
-Y = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(kspace)))
+plt.subplot(1, 2, 1)
+Y = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(kspace)))
 img = np.abs(Y)
-plt.imshow(np.abs(kspace), cmap='gray')
+plt.imshow(np.abs(kspace[:,:,1]), cmap='gray')
 plt.title('k-Space')
-plt.subplot(1, 3, 2)
-Y = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(kspaceJitt)))
-img = np.abs(Y)
-plt.imshow(np.abs(kspace), cmap='gray')
-plt.title('k-Space Jitter corrected')
-plt.subplot(1, 3, 3)
-plt.imshow(img, cmap='gray')
+# plt.subplot(1, 3, 2)
+# Y = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(kspaceJitt)))
+# img = np.abs(Y)
+# plt.imshow(np.abs(kspace), cmap='gray')
+# plt.title('k-Space Jitter corrected')
+plt.subplot(1, 2, 2)
+plt.imshow(img[:,:,1], cmap='gray')
 plt.title('image')
 plt.show()
 

@@ -168,7 +168,7 @@ exp = Experiment(samples=sample_nr_2_STOP_Seq,  # number of (I,Q) samples to acq
                  tx_t=tx_dt,
                  # RF TX sampling time in microseconds; will be rounded to a multiple of system clocks (122.88 MHz)
                  rx_t=rx_dt,  # rx_dt_corr,  # RF RX sampling time in microseconds; as above
-                 instruction_file="TSE_2D_tests_RX_ON.txt",  # TSE_2D_tests.txt   "TSE_2D_tests_echo_center_Rf_RX_ON.txt", #
+                 instruction_file="TSE_2D_tests_echo_center_Rf_RX_ON.txt", #"TSE_2D_tests_RX_ON.txt",  # TSE_2D_tests.txt
                  assert_errors=False)
 
 for idxTR in range(TR_nr):
@@ -250,7 +250,7 @@ samples_data = len(data)
 t_rx = np.linspace(0, rx_dt * samples_data, samples_data)  # us
 
 echo_shift_idx_1 = 6491  # RxBuffIniTrash + np.floor(echo_delay1 / rx_dt).astype('int')
-echo_shift_idx_2 = 14519 # RxBuffIniTrash + np.floor(echo_delay2 / rx_dt).astype('int')
+echo_shift_idx_2 = 14499 # RxBuffIniTrash + np.floor(echo_delay2 / rx_dt).astype('int')
 
 kspaceOver = np.zeros([sample_nr_echo, TR_nr * ETL]).astype(complex)
 kspaceTmp = np.zeros([sample_nr_echo, TR_nr * ETL]).astype(complex)
@@ -300,7 +300,8 @@ plt.title('Total sampled data = %i' % samples_data)
 plt.grid()
 
 plt.subplot(3, 1, 2)
-plt.plot(np.abs(kspace))
+# plt.plot(np.abs(kspace))
+plt.plot(np.abs(kspaceOver))
 plt.legend(['1st acq', '2nd acq','3','4','5','6','7','8'])
 plt.subplot(3, 1, 3)
 plt.plot(np.arange(echo_shift_idx_1, echo_shift_idx_1 + sample_nr_echo,1), np.abs(kspaceTmp[:, 0::2]))
