@@ -168,7 +168,7 @@ exp = Experiment(samples=sample_nr_2_STOP_Seq,  # number of (I,Q) samples to acq
                  tx_t=tx_dt,
                  # RF TX sampling time in microseconds; will be rounded to a multiple of system clocks (122.88 MHz)
                  rx_t=rx_dt,  # rx_dt_corr,  # RF RX sampling time in microseconds; as above
-                 instruction_file="TSE_2D_tests_echo_center_Rf_RX_ON.txt", # "TSE_2D_tests_RX_ON.txt",  # TSE_2D_tests.txt
+                 instruction_file="TSE_2D_tests_RX_ON.txt",  # TSE_2D_tests.txt   "TSE_2D_tests_echo_center_Rf_RX_ON.txt", #
                 assert_errors=False)
 
 for idxTR in range(TR_nr):
