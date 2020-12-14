@@ -169,7 +169,7 @@ exp = Experiment(samples=sample_nr_2_STOP_Seq,  # number of (I,Q) samples to acq
                  # RF TX sampling time in microseconds; will be rounded to a multiple of system clocks (122.88 MHz)
                  rx_t=rx_dt,  # rx_dt_corr,  # RF RX sampling time in microseconds; as above
                  instruction_file="TSE_2D_tests_RX_ON.txt",  # TSE_2D_tests.txt   "TSE_2D_tests_echo_center_Rf_RX_ON.txt", #
-                assert_errors=False)
+                 assert_errors=False)
 
 for idxTR in range(TR_nr):
     ## Initialise data buffers
@@ -257,7 +257,8 @@ kspaceTmp = np.zeros([sample_nr_echo, pe_step_nr]).astype(complex)
 
 kspaceTmp[:, 0::2] = data[echo_shift_idx_1:echo_shift_idx_1 + sample_nr_echo, :]
 kspaceTmp[:, 1::2] = data[echo_shift_idx_2:echo_shift_idx_2 + sample_nr_echo, :]
-kspaceOver = np.squeeze(kspaceTmp[:,kIdxTmp2.reshape(-1, 1)])
+kspaceOver[:,np.squeeze(kIdxTmp2.reshape(-1, 1))] = kspaceTmp
+# kspaceOver = np.squeeze(kspaceTmp[:,kIdxTmp2.reshape(-1, 1)])
 kspace = sig.decimate(kspaceOver, overSamplRatio, axis=0)
 
 ### Correct for shift on echoes  ###
@@ -276,8 +277,8 @@ echoWind2 = echoWind2.T
 for idxTR in range(TR_nr):
     kspaceTmpJitt[:, idxTR * ETL] = data[echoWind1[:,idxTR], idxTR]
     kspaceTmpJitt[:, idxTR * ETL + 1] = data[echoWind2[:,idxTR], idxTR]
-
-kspaceOverJitt = np.squeeze(kspaceTmpJitt[:,kIdxTmp2.reshape(-1, 1)])
+kspaceOverJitt[:,np.squeeze(kIdxTmp2.reshape(-1, 1))] = kspaceTmpJitt
+# kspaceOverJitt = np.squeeze(kspaceTmpJitt[:,kIdxTmp2.reshape(-1, 1)])
 kspaceJitt = sig.decimate(kspaceOverJitt, overSamplRatio, axis=0)
 timestr = time.strftime("%Y%m%d-%H%M%S")
 filemane = timestr + str("outfile")
