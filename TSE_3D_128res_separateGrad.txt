@@ -53,10 +53,10 @@ PR 4, 597             // 8- wait
 //Block 5: fe (echo 1)
 GRADOFFSET 1865 					        // A[28] GRADOFFSET Frequency encoding
 TXOFFSET 0		// @@@ TEST			        // A[2C] TXOFFSET 0: RF 90x+
-PR 8, 7640        // ORIGINAL grad&read    // A[2B]
-//PR 8, 3793         // @@@ TEST grad&read      // A[2B]
-//PR 10, 100        // @@@ TEST grad&read&pulse // A[2D] NOT to use on actual MRI!! Be careful, this sends a Tx while Rx is ON Echo ref
-//PR 8, 3747        // @@@ TEST grad&read       // A[2E]
+//PR 8, 7640        // ORIGINAL grad&read    // A[2B]
+PR 8, 3793         // @@@ TEST grad&read      // A[2B]
+PR 10, 100        // @@@ TEST grad&read&pulse // A[2D] NOT to use on actual MRI!! Be careful, this sends a Tx while Rx is ON Echo ref
+PR 8, 3747        // @@@ TEST grad&read       // A[2E]
 PR 4, 133             // 3- wait
 //Block 6.1: pe- (echo 1)
 GRADOFFSET 3065 						// A[28] GRADOFFSET Phase encoding-
@@ -83,10 +83,10 @@ PR 4, 597             // 8- wait
 //Block 5: fe (echo 2)
 GRADOFFSET 5465  						        // A[28] GRADOFFSET Frequency encoding
 TXOFFSET 0		// @@@ TEST			        // A[2C] TXOFFSET 0: RF 90x+
-PR 8, 7640        // ORIGINAL grad&read    // A[2B]
-//PR 8, 3793         // @@@ TEST grad&read      // A[2B]
-//PR 10, 100        // @@@ TEST grad&read&pulse // A[2D] NOT to use on actual MRI!! Be careful, this sends a Tx while Rx is ON Echo ref
-//PR 8, 3747        // @@@ TEST grad&read       // A[2E]
+//PR 8, 7640        // ORIGINAL grad&read    // A[2B]
+PR 8, 3793         // @@@ TEST grad&read      // A[2B]
+PR 10, 100        // @@@ TEST grad&read&pulse // A[2D] NOT to use on actual MRI!! Be careful, this sends a Tx while Rx is ON Echo ref
+PR 8, 3747        // @@@ TEST grad&read       // A[2E]
 PR 4, 133             // 3- wait
 //Block 6.1: pe- (echo 2)
 GRADOFFSET 6665						        // A[28] GRADOFFSET Frequency encoding

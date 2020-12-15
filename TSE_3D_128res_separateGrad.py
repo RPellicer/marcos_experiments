@@ -280,8 +280,8 @@ for idx3Dpe in range(pe3D_step_nr):
 samples_data = len(data)
 t_rx = np.linspace(0, rx_dt * samples_data, samples_data)  # us
 
-echo_shift_idx_1 = 6491  # RxBuffIniTrash + np.floor(echo_delay1 / rx_dt).astype('int')
-echo_shift_idx_2 = 14499  # RxBuffIniTrash + np.floor(echo_delay2 / rx_dt).astype('int')
+echo_shift_idx_1 = 21017  # RxBuffIniTrash + np.floor(echo_delay1 / rx_dt).astype('int')
+echo_shift_idx_2 = 45111  # RxBuffIniTrash + np.floor(echo_delay2 / rx_dt).astype('int')
 
 kspaceOver = np.zeros([sample_nr_echo, TR_nr * ETL, pe3D_step_nr]).astype(complex)
 kspaceTmp = np.zeros([sample_nr_echo, TR_nr * ETL, pe3D_step_nr]).astype(complex)
@@ -320,7 +320,8 @@ plt.grid()
 
 plt.subplot(3, 1, 2)
 for idx3Dpe in range(pe3D_step_nr):
-    plt.plot(np.abs(kspace[:, :, idx3Dpe]))
+    plt.plot(np.abs(kspaceOver[:, :, idx3Dpe]))
+    # plt.plot(np.abs(kspace[:, :, idx3Dpe]))
 plt.legend(['1st acq', '2nd acq', '3', '4', '5', '6', '7', '8'])
 plt.subplot(3, 1, 3)
 for idx3Dpe in range(pe3D_step_nr):
