@@ -45,8 +45,8 @@ def sinc(x, tx_time, Nlobes, alpha):
 # Experiment parameters
 freq_larmor = 2.14909 # local oscillator frequency, MHz
 ETL = 2  # Echo train length
-fe_resolution = 64  # number of (I,Q) USEFUL samples to acquire during a shot
-pe_step_nr = 32  # number of phase encoding steps
+fe_resolution = 128  # number of (I,Q) USEFUL samples to acquire during a shot
+pe_step_nr = 4  # number of phase encoding steps
 pe3D_step_nr = 2  # number of phase encoding steps in the slice direction
 kSpaceOrderingMode = 1  # Way kSpace is traversed durign phase encoding steps: 0 = linear, 1 = blocks center first
 # Delays385
@@ -59,16 +59,16 @@ BW = 20000  # Rf Rx Bandwidth
 rx_dt_img = (1 / BW) * 1e6  # in us, Sampling dwell time
 overSamplRatio = 50
 rx_dt = rx_dt_img / overSamplRatio  # in us, Sampling dwell time
-dt_grad_each = 3.333
+dt_grad_each = 6.666
 dt_grad = dt_grad_each * 3
 # rx_dt = 50  # RF RX sampling dt
 
 ##### Times have to match with "<instruction_file>.txt" ####
 T_tx_Rf = 100  # RF pulse length (us)
-T_G_ramp_dur = 25 * dt_grad  # Gradient ramp time (us)
+T_G_ramp_dur = 26 * dt_grad  # Gradient ramp time (us)
 # T_G_ramp_Rf_dur = 60  # Gradient ramp time (us)
 
-sample_nr_2_STOP_Seq = 30000  # Nr. of samples to acquire TO STOP the acquisition
+sample_nr_2_STOP_Seq = 55000  # Nr. of samples to acquire TO STOP the acquisition
 
 # Correct for DC offset and scaling
 scale_G_ss = 0.45
@@ -79,7 +79,7 @@ offset_G_pe = 0.0
 offset_G_fe = 0.0
 
 # Rf amplitude
-Rf_ampl = 0.1  # for Tom
+Rf_ampl = 0.05 # 0.1  # for Tom
 sample_nr_echo = (fe_resolution + sample_nr_dig_filt) * overSamplRatio  # number of (I,Q) TOTAL samples to acquire during a shot
 
 # Centering the echo
@@ -121,7 +121,7 @@ grad_pe_samp_nr = math.ceil(T_G_pe_dur / dt_grad)
 grad_pe = np.hstack([np.linspace(0, 1, grad_ramp_samp_nr),  # Ramp up
                      np.ones(grad_pe_samp_nr - 2 * grad_ramp_samp_nr),  # Top
                      np.linspace(1, 0, grad_ramp_samp_nr)])  # Ramp down
-grad_pe = np.hstack([grad_pe, np.zeros(190 - np.size(grad_pe))])
+grad_pe = np.hstack([grad_pe, np.zeros(200 - np.size(grad_pe))])
 
 # Pre-frequency encoding gradient shape
 grad_pre_fe_samp_nr = math.ceil(T_G_pre_fe_dur / dt_grad)
@@ -143,8 +143,6 @@ rd_G_fe = rd_G_fe[0:-1] - rd_G_fe[-2] / 2
 grad_fe = np.hstack([ru_G_fe,  # Ramp up
                      np.ones(grad_fe_samp_nr - 2 * grad_ramp_samp_nr),  # Top
                      rd_G_fe])  # Ramp down
-sample_nr_center_G_fe = (((1 / (
-            BW / 140)) / 2) * 1e6 + T_G_ramp_dur) / dt_grad  # Total phase encoding gradient ON time length (us)
 grad_fe = np.hstack([grad_fe, np.zeros(np.round(400 - np.size(grad_fe)).astype('int'))])
 
 # Arrange kSpace filling
@@ -178,9 +176,9 @@ exp = Experiment(samples=sample_nr_2_STOP_Seq,  # number of (I,Q) samples to acq
                  tx_t=tx_dt,
                  # RF TX sampling time in microseconds; will be rounded to a multiple of system clocks (122.88 MHz)
                  rx_t=rx_dt,  # rx_dt_corr,  # RF RX sampling time in microseconds; as above
-                 instruction_file="TSE_2D_tests_RX_ON.txt",
-                 # instruction_file="TSE_2D_tests_echo_center_Rf_RX_ON.txt",
-                 # TSE_2D_tests.txt   "TSE_2D_tests_echo_center_Rf_RX_ON.txt", #
+                 instruction_file="TSE_3D_128res_separateGrad.txt",
+                 # instruction_file="TSE_2D_tests_RX_ON.txt",
+                 # instruction_file="TSE_2D_tests_echo_center_Rf_RX_ON.txt"
                  assert_errors=False,
                  init_gpa=False)
 
@@ -205,23 +203,23 @@ for idx3Dpe in range(pe3D_step_nr):
         tx_length = np.hstack([tx_length, tx_length[-1] + tx180.size])
 
         # Adjust gradient waveforms
-        # Echo nr                  |               1               |               2               |
-        # Block    |    1   |   2  |  3  |   4   |   5     |   6   |  7  |   8   |    9    |  10   |
-        # Mem      |    0   |   2  |  3  |   4   |   5     |   6   |  7  |   8   |    9    |  10   |
-        # RF       |_$$_____|______|_$$__|_______|_________|_______|_$$__|_______|_________|_______|_$$_
-        #          |        |      |     |       |         |       |     |       |         |       |
-        # Gss      |/--\   _|______|/--\_|_______|_________|_______|/--\_|_______|_________|_______|/--\
-        #          |    \_/ |      |     |       |         |       |     |       |         |       |
-        # Gpe      |________|______|_____|/1111\_|_________|      _|_____|/2222\_|_________|      _|____
-        #          |        |      |     |       |         |\1111/ |     |       |         |\2222/ |
-        # Gfe      |________|/---\_|_____|_______|/------\_|_______|_____|_______|/------\_|_______|____
+        # Echo nr                  |               1                               |               2               |
+        # Block    |    1   |   2  |  3  |  4.1  |  4.2  |   5     |  6.1  |  6.2  |  7  |   8   |    9    |  10   |
+        # Mem      |    0   |   2  |  3  |  4.1  |  4.2  |   5     |  6.1  |  6.2  |  7  |   8   |    9    |  10   |
+        # RF       |_$$_____|______|_$$__|_______|_______|_________|_______|_______|_$$__|_______|_________|_______|_$$_
+        #          |        |      |     |       |       |         |       |       |     |       |         |       |
+        # Gss      |________|______|_____|/7777\_|_______|_________|_______|      _|_____|_______|_________|_______|____
+        #          |        |      |     |       |       |         |       |\7777/ |     |       |         |       |
+        # Gpe      |________|______|_____|_______|/1111\_|_________|      _|_______|_____|/2222\_|_________|      _|____
+        #          |        |      |     |       |       |         |\1111/ |       |     |       |         |\2222/ |
+        # Gfe      |________|/---\_|_____|_______|_______|/------\_|_______|_______|_____|_______|/------\_|_______|____
 
         # Shape Gradients block by block
         G_length = np.zeros(1).astype(int)
         G_length_Non_Zero = np.zeros(1).astype(int)
         # Block 1: Rf90 + ss
         # Block 2: -fe/2 prephase
-        grad_fe_2_corr = grad_pre_fe * scale_G_fe + offset_G_fe
+        grad_fe_2_corr = -grad_pre_fe * scale_G_fe + offset_G_fe
         grad_pe_2_corr = np.zeros(np.size(grad_fe_2_corr)) + offset_G_pe
         grad_ss_2_corr = np.zeros(np.size(grad_fe_2_corr)) + offset_G_ss
         grad_idx = exp.add_grad([grad_ss_2_corr, grad_pe_2_corr, grad_fe_2_corr])
@@ -232,13 +230,20 @@ for idx3Dpe in range(pe3D_step_nr):
             scale_G_pe_sweep = scale_G_pe_range[kIdxTmp2[idxTR, idxETL]]
             # ----echo 1--------------------
             # Block 3: Rf180 + ss
-            # Block 4: pe+
-            grad_ss_4_corr = grad_pe * scale_G_ss * scale_G_pe3D_sweep + offset_G_ss
-            # grad_ss_4_corr = np.zeros(np.size(grad_pe_4_corr)) + offset_G_ss
-            grad_pe_4_corr = grad_pe * scale_G_pe * scale_G_pe_sweep + offset_G_pe
-            grad_fe_4_corr = np.zeros(np.size(grad_pe_4_corr)) + offset_G_fe
-            grad_idx = exp.add_grad([grad_ss_4_corr, grad_pe_4_corr, grad_fe_4_corr])
-            G_length = np.hstack([G_length, G_length[-1] + grad_fe_4_corr.size])
+            # Block 4.1: pe3D+
+            grad_ss_41_corr = grad_pe * scale_G_ss * scale_G_pe3D_sweep + offset_G_ss
+            grad_pe_41_corr = np.zeros(np.size(grad_pe)) + offset_G_ss
+            grad_fe_41_corr = np.zeros(np.size(grad_pe)) + offset_G_fe
+            grad_idx = exp.add_grad([grad_ss_41_corr, grad_pe_41_corr, grad_fe_41_corr])
+            G_length = np.hstack([G_length, G_length[-1] + grad_fe_41_corr.size])
+            G_length_Non_Zero = np.hstack([G_length_Non_Zero, grad_pe_samp_nr])
+
+            # Block 4.2: pe+
+            grad_ss_42_corr = np.zeros(np.size(grad_pe)) + offset_G_ss
+            grad_pe_42_corr = grad_pe * scale_G_pe * scale_G_pe_sweep + offset_G_pe
+            grad_fe_42_corr = np.zeros(np.size(grad_pe)) + offset_G_fe
+            grad_idx = exp.add_grad([grad_ss_42_corr, grad_pe_42_corr, grad_fe_42_corr])
+            G_length = np.hstack([G_length, G_length[-1] + grad_fe_42_corr.size])
             G_length_Non_Zero = np.hstack([G_length_Non_Zero, grad_pe_samp_nr])
 
             # Block 5: fe
@@ -250,9 +255,17 @@ for idx3Dpe in range(pe3D_step_nr):
             G_length_Non_Zero = np.hstack([G_length_Non_Zero, grad_fe_samp_nr])
 
             # Block 6: pe-
-            grad_ss_6_corr = grad_pe * (-scale_G_ss) * scale_G_pe3D_sweep + offset_G_ss
+            grad_ss_6_corr = np.zeros(np.size(grad_pe)) + offset_G_ss
             grad_pe_6_corr = grad_pe * (-scale_G_pe) * scale_G_pe_sweep + offset_G_pe
-            grad_fe_6_corr = np.zeros(np.size(grad_pe_6_corr)) + offset_G_fe
+            grad_fe_6_corr = np.zeros(np.size(grad_pe)) + offset_G_fe
+            grad_idx = exp.add_grad([grad_ss_6_corr, grad_pe_6_corr, grad_fe_6_corr])
+            G_length = np.hstack([G_length, G_length[-1] + grad_fe_6_corr.size])
+            G_length_Non_Zero = np.hstack([G_length_Non_Zero, grad_pe_samp_nr])
+
+            # Block 6: pe3D-
+            grad_ss_6_corr = grad_pe * (-scale_G_ss) * scale_G_pe3D_sweep + offset_G_ss
+            grad_pe_6_corr = np.zeros(np.size(grad_pe)) + offset_G_pe
+            grad_fe_6_corr = np.zeros(np.size(grad_pe)) + offset_G_fe
             grad_idx = exp.add_grad([grad_ss_6_corr, grad_pe_6_corr, grad_fe_6_corr])
             G_length = np.hstack([G_length, G_length[-1] + grad_fe_6_corr.size])
             G_length_Non_Zero = np.hstack([G_length_Non_Zero, grad_pe_samp_nr])
@@ -282,29 +295,8 @@ kspace = sig.decimate(kspaceOver, overSamplRatio, axis=0)
 
 imageRecon = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(kspace[3:])))
 
-fig, ax = plt.subplots(1,1)
-fig3D = plt3d.interactivePlot(fig, ax, np.abs(imageRecon), fov = (100,100,100))
-
-
-# ### Correct for shift on echoes  ###
-# tresholdWindowIdx = np.array([0, 300])
-# trigTres = np.argmax(abs(data[tresholdWindowIdx[0]:tresholdWindowIdx[1], :,:]), 0.1, axis=0)
-# trigTres = (trigTres - np.ceil(np.mean(trigTres))).astype(int)
-# trigTres = trigTres[..., None]
-# kspaceTmpJitt = np.zeros([sample_nr_echo, TR_nr * ETL, idx3Dpe]).astype(complex)
-# tmp1 = np.arange(echo_shift_idx_1, echo_shift_idx_1 + sample_nr_echo)
-# tmp2 = np.arange(echo_shift_idx_2, echo_shift_idx_2 + sample_nr_echo)
-# echoWind1 = tmp1 + trigTres
-# echoWind1 = echoWind1.T
-# echoWind2 = tmp2 + trigTres
-# echoWind2 = echoWind2.T
-#
-# for idxTR in range(TR_nr):
-#     kspaceTmpJitt[:, idxTR * ETL] = data[echoWind1[:, idxTR], idxTR]
-#     kspaceTmpJitt[:, idxTR * ETL + 1] = data[echoWind2[:, idxTR], idxTR]
-#
-# kspaceOverJitt = np.squeeze(kspaceTmpJitt[:, kIdxTmp2.reshape(-1, 1)])
-# kspaceJitt = sig.decimate(kspaceOverJitt, overSamplRatio, axis=0)
+# fig, ax = plt.subplots(1,1)
+# fig3D = plt3d.interactivePlot(fig, ax, np.abs(imageRecon), fov = (100,100,100))
 
 # Save the data to post process if necesary
 timestr = time.strftime("%Y%m%d-%H%M%S")
@@ -312,50 +304,50 @@ filemane = timestr + str("outfile")
 np.savez(filemane, data=data, kspace=kspace, kspaceOverJitt=kspaceOver)
 # np.save("testData.npy", data)
 
-# plt.figure(1)
-# plt.subplot(3, 1, 1)
-# # plt.plot(t_rx, np.real(data))
-# # plt.plot(t_rx, np.abs(data))
-# # plt.plot(np.real(data))
-# for idx3Dpe in range(pe3D_step_nr):
-#     plt.plot(np.abs(data[:,:,idx3Dpe]))
-# # datacursor(display='multiple', draggable=True)
-# plt.legend(['1st acq', '2nd acq'])
-# plt.xlabel('time (us)')
-# plt.ylabel('signal received (V)')
-# plt.title('Total sampled data = %i' % samples_data)
-# plt.grid()
+plt.figure(1)
+plt.subplot(3, 1, 1)
+# plt.plot(t_rx, np.real(data))
+# plt.plot(t_rx, np.abs(data))
+# plt.plot(np.real(data))
+for idx3Dpe in range(pe3D_step_nr):
+    plt.plot(np.abs(data[:,:,idx3Dpe]))
+# datacursor(display='multiple', draggable=True)
+plt.legend(['1st acq', '2nd acq'])
+plt.xlabel('time (us)')
+plt.ylabel('signal received (V)')
+plt.title('Total sampled data = %i' % samples_data)
+plt.grid()
 
-# plt.subplot(3, 1, 2)
-# for idx3Dpe in range(pe3D_step_nr):
-#     plt.plot(np.abs(kspace[:, :, idx3Dpe]))
-# plt.legend(['1st acq', '2nd acq', '3', '4', '5', '6', '7', '8'])
-# plt.subplot(3, 1, 3)
-# for idx3Dpe in range(pe3D_step_nr):
-#     plt.plot(np.arange(echo_shift_idx_1, echo_shift_idx_1 + sample_nr_echo, 1), np.abs(kspaceTmp[:, 0::2, idx3Dpe]))
-#     plt.plot(np.arange(echo_shift_idx_2, echo_shift_idx_2 + sample_nr_echo, 1), np.abs(kspaceTmp[:, 1::2, idx3Dpe]))
-# # datacursor(display='multiple', draggable=True)
-# plt.legend(['1st acq', '2nd acq', '3', '4', '5', '6', '7', '8'])
-# plt.xlabel('Sample nr.')
-# plt.ylabel('signal received (V)')
-# plt.title('Echo time in acquisition from = %f' % t_rx[echo_shift_idx_1])
-# plt.grid()
+plt.subplot(3, 1, 2)
+for idx3Dpe in range(pe3D_step_nr):
+    plt.plot(np.abs(kspace[:, :, idx3Dpe]))
+plt.legend(['1st acq', '2nd acq', '3', '4', '5', '6', '7', '8'])
+plt.subplot(3, 1, 3)
+for idx3Dpe in range(pe3D_step_nr):
+    plt.plot(np.arange(echo_shift_idx_1, echo_shift_idx_1 + sample_nr_echo, 1), np.abs(kspaceTmp[:, 0::2, idx3Dpe]))
+    plt.plot(np.arange(echo_shift_idx_2, echo_shift_idx_2 + sample_nr_echo, 1), np.abs(kspaceTmp[:, 1::2, idx3Dpe]))
+# datacursor(display='multiple', draggable=True)
+plt.legend(['1st acq', '2nd acq', '3', '4', '5', '6', '7', '8'])
+plt.xlabel('Sample nr.')
+plt.ylabel('signal received (V)')
+plt.title('Echo time in acquisition from = %f' % t_rx[echo_shift_idx_1])
+plt.grid()
 
-# plt.figure(2)
-# plt.subplot(1, 2, 1)
-# Y = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(kspace)))
+plt.figure(2)
+plt.subplot(1, 2, 1)
+Y = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(kspace)))
+img = np.abs(Y)
+plt.imshow(np.abs(kspace[:,:,1]), cmap='gray')
+plt.title('k-Space')
+# plt.subplot(1, 3, 2)
+# Y = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(kspaceJitt)))
 # img = np.abs(Y)
-# plt.imshow(np.abs(kspace[:,:,1]), cmap='gray')
-# plt.title('k-Space')
-# # plt.subplot(1, 3, 2)
-# # Y = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(kspaceJitt)))
-# # img = np.abs(Y)
-# # plt.imshow(np.abs(kspace), cmap='gray')
-# # plt.title('k-Space Jitter corrected')
-# plt.subplot(1, 2, 2)
-# plt.imshow(img[:,:,1], cmap='gray')
-# plt.title('image')
-# plt.show()
+# plt.imshow(np.abs(kspace), cmap='gray')
+# plt.title('k-Space Jitter corrected')
+plt.subplot(1, 2, 2)
+plt.imshow(img[:,:,1], cmap='gray')
+plt.title('image')
+plt.show()
 
 print('&&&&&  MEMORY   &&&&& Gradient offests should start at:')
 print((G_length * 3))
@@ -363,8 +355,8 @@ print('Each gradient is full until')
 print((G_length[:-1] * 3 + G_length_Non_Zero[1:] * 3))
 
 print('&&&&&  TIME   &&&&& Gradient memory can last until:')
-print(((G_length[1:] - G_length[0:-1]) * 10))
+print(np.ceil(((G_length[1:] - G_length[0:-1]) * dt_grad)))
 print('Each gradient is ON for')
-print((G_length_Non_Zero[1:] * 10))
+print(np.ceil((G_length_Non_Zero[1:] * dt_grad)))
 
 del exp
