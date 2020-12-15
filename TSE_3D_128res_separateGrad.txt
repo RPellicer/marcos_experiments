@@ -53,10 +53,10 @@ PR 4, 597             // 8- wait
 //Block 5: fe (echo 1)
 GRADOFFSET 1865 					        // A[28] GRADOFFSET Frequency encoding
 TXOFFSET 0		// @@@ TEST			        // A[2C] TXOFFSET 0: RF 90x+
-//PR 8, 7640        // ORIGINAL grad&read    // A[2B]
-PR 8, 3793         // @@@ TEST grad&read      // A[2B]
-PR 10, 100        // @@@ TEST grad&read&pulse // A[2D] NOT to use on actual MRI!! Be careful, this sends a Tx while Rx is ON Echo ref
-PR 8, 3747        // @@@ TEST grad&read       // A[2E]
+PR 8, 7640        // ORIGINAL grad&read    // A[2B]
+//PR 8, 3793         // @@@ TEST grad&read      // A[2B]
+//PR 10, 100        // @@@ TEST grad&read&pulse // A[2D] NOT to use on actual MRI!! Be careful, this sends a Tx while Rx is ON Echo ref
+//PR 8, 3747        // @@@ TEST grad&read       // A[2E]
 PR 4, 133             // 3- wait
 //Block 6.1: pe- (echo 1)
 GRADOFFSET 3065 						// A[28] GRADOFFSET Phase encoding-
@@ -83,10 +83,10 @@ PR 4, 597             // 8- wait
 //Block 5: fe (echo 2)
 GRADOFFSET 5465  						        // A[28] GRADOFFSET Frequency encoding
 TXOFFSET 0		// @@@ TEST			        // A[2C] TXOFFSET 0: RF 90x+
-//PR 8, 7640        // ORIGINAL grad&read    // A[2B]
-PR 8, 3793         // @@@ TEST grad&read      // A[2B]
-PR 10, 100        // @@@ TEST grad&read&pulse // A[2D] NOT to use on actual MRI!! Be careful, this sends a Tx while Rx is ON Echo ref
-PR 8, 3747        // @@@ TEST grad&read       // A[2E]
+PR 8, 7640        // ORIGINAL grad&read    // A[2B]
+//PR 8, 3793         // @@@ TEST grad&read      // A[2B]
+//PR 10, 100        // @@@ TEST grad&read&pulse // A[2D] NOT to use on actual MRI!! Be careful, this sends a Tx while Rx is ON Echo ref
+//PR 8, 3747        // @@@ TEST grad&read       // A[2E]
 PR 4, 133             // 3- wait
 //Block 6.1: pe- (echo 2)
 GRADOFFSET 6665						        // A[28] GRADOFFSET Frequency encoding
@@ -95,12 +95,6 @@ PR 4, 10             // 8- wait
 //Block 6.2: pe3D- (echo 2)
 GRADOFFSET 7260  						// A[28] GRADOFFSET Phase encoding-
 PR 8, 3750          // grad&read            // A[2B]
-//PR 4, 0             // 3- wait                 // A[22] *** Adjust here to change TE.
-// Block 3: Rf180y- + ss (echo 2)
-//Safety to leave gradients to zero
-//PR 3, 0             // wait
-//GRADOFFSET 0						        // A[28] GRADOFFSET Frequency encoding
-//PR 7, 18         // grad            // A[2B]
 //PR 4, 0             // 3- wait                 // A[22] *** Adjust here to change TR.
 PR 4, 1000000         // wait & read          // A[31] STOP: fill data buffer to trigger stop
 DEC 2 				// reduce counter 2		// A[32] DEC R[2]

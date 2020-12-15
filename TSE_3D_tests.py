@@ -46,7 +46,7 @@ def sinc(x, tx_time, Nlobes, alpha):
 freq_larmor = 2.14909 # local oscillator frequency, MHz
 ETL = 2  # Echo train length
 fe_resolution = 64  # number of (I,Q) USEFUL samples to acquire during a shot
-pe_step_nr = 32  # number of phase encoding steps
+pe_step_nr = 64  # number of phase encoding steps
 pe3D_step_nr = 2  # number of phase encoding steps in the slice direction
 kSpaceOrderingMode = 1  # Way kSpace is traversed durign phase encoding steps: 0 = linear, 1 = blocks center first
 # Delays385
