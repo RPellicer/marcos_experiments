@@ -65,7 +65,7 @@ dt_grad = dt_grad_each * 3
 
 ##### Times have to match with "<instruction_file>.txt" ####
 T_tx_Rf = 100  # RF pulse length (us)
-T_G_ramp_dur = 26 * dt_grad  # Gradient ramp time (us)
+T_G_ramp_dur = 13 * dt_grad  # Gradient ramp time (us)
 # T_G_ramp_Rf_dur = 60  # Gradient ramp time (us)
 
 sample_nr_2_STOP_Seq = 55000  # Nr. of samples to acquire TO STOP the acquisition
@@ -79,7 +79,7 @@ offset_G_pe = 0.0
 offset_G_fe = 0.0
 
 # Rf amplitude
-Rf_ampl = 0.05 # 0.1  # for Tom
+Rf_ampl = 0.1  # for Tom
 sample_nr_echo = (fe_resolution + sample_nr_dig_filt) * overSamplRatio  # number of (I,Q) TOTAL samples to acquire during a shot
 
 # Centering the echo
@@ -121,7 +121,7 @@ grad_pe_samp_nr = math.ceil(T_G_pe_dur / dt_grad)
 grad_pe = np.hstack([np.linspace(0, 1, grad_ramp_samp_nr),  # Ramp up
                      np.ones(grad_pe_samp_nr - 2 * grad_ramp_samp_nr),  # Top
                      np.linspace(1, 0, grad_ramp_samp_nr)])  # Ramp down
-grad_pe = np.hstack([grad_pe, np.zeros(200 - np.size(grad_pe))])
+grad_pe = np.hstack([grad_pe, np.zeros(190 - np.size(grad_pe))])
 
 # Pre-frequency encoding gradient shape
 grad_pre_fe_samp_nr = math.ceil(T_G_pre_fe_dur / dt_grad)
@@ -132,7 +132,7 @@ rd_Gpre_fe = rd_Gpre_fe[0:-1] - rd_Gpre_fe[-2] / 2
 grad_pre_fe = np.hstack([ru_Gpre_fe,  # Ramp up
                          np.ones(grad_pre_fe_samp_nr - 2 * grad_ramp_samp_nr),  # Top
                          rd_Gpre_fe])  # Ramp down
-grad_pre_fe = np.hstack([grad_pre_fe, np.zeros(220 - np.size(grad_pre_fe))])
+grad_pre_fe = np.hstack([grad_pre_fe, np.zeros(200 - np.size(grad_pre_fe))])
 
 # Frequency encoding gradient shape
 grad_fe_samp_nr = math.ceil(T_G_fe_dur / dt_grad)
@@ -143,7 +143,7 @@ rd_G_fe = rd_G_fe[0:-1] - rd_G_fe[-2] / 2
 grad_fe = np.hstack([ru_G_fe,  # Ramp up
                      np.ones(grad_fe_samp_nr - 2 * grad_ramp_samp_nr),  # Top
                      rd_G_fe])  # Ramp down
-grad_fe = np.hstack([grad_fe, np.zeros(np.round(400 - np.size(grad_fe)).astype('int'))])
+grad_fe = np.hstack([grad_fe, np.zeros(np.round(370 - np.size(grad_fe)).astype('int'))])
 
 # Arrange kSpace filling
 scale_G_pe_range = np.linspace(-1, 1, pe_step_nr)
@@ -219,7 +219,7 @@ for idx3Dpe in range(pe3D_step_nr):
         G_length_Non_Zero = np.zeros(1).astype(int)
         # Block 1: Rf90 + ss
         # Block 2: -fe/2 prephase
-        grad_fe_2_corr = -grad_pre_fe * scale_G_fe + offset_G_fe
+        grad_fe_2_corr = grad_pre_fe * scale_G_fe + offset_G_fe
         grad_pe_2_corr = np.zeros(np.size(grad_fe_2_corr)) + offset_G_pe
         grad_ss_2_corr = np.zeros(np.size(grad_fe_2_corr)) + offset_G_ss
         grad_idx = exp.add_grad([grad_ss_2_corr, grad_pe_2_corr, grad_fe_2_corr])
@@ -280,8 +280,8 @@ for idx3Dpe in range(pe3D_step_nr):
 samples_data = len(data)
 t_rx = np.linspace(0, rx_dt * samples_data, samples_data)  # us
 
-echo_shift_idx_1 = 21017  # RxBuffIniTrash + np.floor(echo_delay1 / rx_dt).astype('int')
-echo_shift_idx_2 = 45111  # RxBuffIniTrash + np.floor(echo_delay2 / rx_dt).astype('int')
+echo_shift_idx_1 = 19003  # RxBuffIniTrash + np.floor(echo_delay1 / rx_dt).astype('int')
+echo_shift_idx_2 = 41142  # RxBuffIniTrash + np.floor(echo_delay2 / rx_dt).astype('int')
 
 kspaceOver = np.zeros([sample_nr_echo, TR_nr * ETL, pe3D_step_nr]).astype(complex)
 kspaceTmp = np.zeros([sample_nr_echo, TR_nr * ETL, pe3D_step_nr]).astype(complex)
